@@ -1,0 +1,78 @@
+using System.Text;
+using System.Threading.Tasks;
+using System.IO;
+using System.Net;
+using System.Collections;
+using System.Text.RegularExpressions;
+using System.Threading;
+
+
+namespace Experiment
+{
+    public class CrawlUser
+    {
+        List<string> res = new List<string>();
+
+        public CrawlUser(List<string> links)
+        {
+            
+            ThreadPool.SetMaxThreads(5, 10);
+            foreach (var link in links)
+            {
+                ThreadPool.QueueUserWorkItem(new WaitCallback(Crawl), link);
+            }
+            
+            //new Thread(this.Crawl()).Start();
+        }
+       // static void Main(string[] args)
+       // {
+       //     List<string> rest = new List<string>();
+       //     rest.Add("https://www.zhihu.com/question/20034722");
+       //     rest.Add("https://www.zhihu.com/question/38869606");
+       //     CrawlUser myCrawler = new CrawlUser(rest);
+            
+       //     Console.ReadLine();
+       // }
+
+        private void Crawl(object o)
+        {
+            string url = o.ToString();
+            string html = Download(url);
+            Prase(html);
+            
+        }
+
+        public string Download(string url)
+        {
+            try
+            {
+                WebClient webClient = new WebClient();
+                webClient.Encoding = Encoding.UTF8;
+                string html = webClient.DownloadString(url);
+               // string fileName = count.ToString();
+               // File.WriteAllText(fileName, html, Encoding.UTF8);
+                return html;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return "";
+            }
+        }
+
+        public void Prase(string html)
+        {
+            Regex reg=new Regex(@"(?<=""urlToken"":)([\S\s]*?)(?=,""name"")", RegexOptions.IgnoreCase);
+            
+            MatchCollection matches = reg.Matches(html);
+            foreach (Match match in matches)
+            {
+                String x = match.ToString().Replace("\"", "");
+                if (x.Trim().Equals("")) continue;
+                res.Add("http://www.zhihu.com/people/" + x + "/activities");
+               // Console.WriteLine("http://www.zhihu.com/people/" + x + '\n');
+            }
+            
+        }
+    }
+}
